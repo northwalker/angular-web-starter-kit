@@ -5,6 +5,8 @@
     .config(configure);
 
   configure.$inject = [];
+  
+  /* @ngInject */
   function configure() {
 
   }

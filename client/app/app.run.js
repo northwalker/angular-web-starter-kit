@@ -1,13 +1,20 @@
-(function(){
+(function () {
   'use strict';
 
   angular
     .module('app')
-    .run(runBlock);
+    .run(runFunction);
 
-  runBlock.$inject = [];
+  runFunction.$inject = ['$rootScope', '$timeout', '$window'];
+  /* @ngInject */
+  function runFunction($rootScope, $timeout, $window) {
 
-  function runBlock() {
+    console.log('$window.navigator.platform ===> ', $window.navigator.platform);
+    // add a class to the body if we are on windows
+    if ($window.navigator.platform.indexOf('Win') !== -1) {
+      $rootScope.bodyClasses = ['os-windows'];
+
+    }
 
   }
 })();
