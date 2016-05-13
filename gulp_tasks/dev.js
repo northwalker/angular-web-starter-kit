@@ -172,9 +172,11 @@ gulp.task('browser-sync', ['nodemon'], function () {
 
 
 gulp.task('dev', function () {
-
+  var startTimeStamp = new Date();
   process.env.NODE_ENV = 'development';
-  runSequence('dev_clean', 'dev_modernizr', 'dev_styles', 'dev_inject', 'browser-sync');
+  runSequence('dev_clean', 'dev_modernizr', 'dev_styles', 'dev_inject', 'browser-sync', function(){
+    console.log('Total cost time:', (new  Date() - startTimeStamp) , 'ms.');
+  });
 
   gulp.watch([path.join(paths.src,'/app/**/*.css'), path.join(paths.src,'/app/**/*.scss')], function () {
     console.log('Styles files modified...');
@@ -191,5 +193,7 @@ gulp.task('dev', function () {
     // console.log('event', event);
     browserSync.reload();
   });
+
+
 
 });
