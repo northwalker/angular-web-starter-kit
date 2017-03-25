@@ -11,7 +11,7 @@
       .state('common', {
         abstract: true,
         url: '',
-        templateUrl: '/app/layouts/layout.html'
+        templateUrl: 'app/layouts/layout.html'
       })
       .state('common.main', {
         url: '/',
