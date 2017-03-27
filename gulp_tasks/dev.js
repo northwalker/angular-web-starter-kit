@@ -150,3 +150,7 @@ gulp.task('dev', function () {
   });
 
 });
+
+gulp.task('serve', ['dev'],function () {
+
+});

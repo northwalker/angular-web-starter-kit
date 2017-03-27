@@ -90,7 +90,8 @@ gulp.task('styles', function () {
     .pipe($.sass(sassOptions)
       .on('error', $.sass.logError))
     .pipe($.autoprefixer(AUTOPREFIXER_BROWSERS))
-    .pipe($.concat('app.min.css'))
+    .pipe($.concat('app.css'))
+    .pipe($.rename({suffix: '.min'}))
     .pipe($.if('*.css', $.csso()))
     .pipe($.sourcemaps.write())
     .pipe(gulp.dest(paths.tmp + '/serve/app/css/'))
@@ -126,7 +127,8 @@ gulp.task('scripts', ['partials'], function () {
   ])
     .pipe($.sourcemaps.init())
     .pipe($.angularFilesort())
-    .pipe($.concat('app.min.js'))
+    .pipe($.concat('app.js'))
+    .pipe($.rename({suffix: '.min'}))
     .pipe($.ngAnnotate())
     .pipe($.uglify())
     .pipe($.sourcemaps.write())
@@ -137,7 +139,8 @@ gulp.task('scripts', ['partials'], function () {
 gulp.task('inject', ['styles', 'scripts'], function () {
   var injectStyles = gulp.src([paths.tmp + '/serve/app/**/*.css'], {read: false});
   var injectVendorStyles = gulp.src(paths.src + '/app/vendor/**/*.css')
-    .pipe($.concat('vendor.min.css'))
+    .pipe($.concat('vendor.css'))
+    .pipe($.rename({suffix: '.min'}))
     .pipe($.if('*.css', $.csso()))
     .pipe(gulp.dest(paths.tmp + '/serve/app/css/'));
 
@@ -147,7 +150,8 @@ gulp.task('inject', ['styles', 'scripts'], function () {
     paths.src + '/app/vendor/**/*.js',
     '!' + paths.src + '/app/vendor/js/modernizr.js'
   ])
-    .pipe($.concat('vendor.min.js'))
+    .pipe($.concat('vendor.js'))
+    .pipe($.rename({suffix: '.min'}))
     .pipe($.uglify({
       wrap:true
     }))
@@ -169,12 +173,26 @@ gulp.task('inject', ['styles', 'scripts'], function () {
 });
 
 gulp.task('html', ['inject'], function () {
+
+  // var jsFilter = $.filter("**/*.js", { restore: true });
+  // var cssFilter = $.filter("**/*.css", { restore: true });
+  // var indexHtmlFilter = $.filter(['**/*', '!**/index.html'], { restore: true });
+
   var wiredepOptions = {
     directory: 'bower_components'
   };
   return gulp.src(paths.tmp + '/serve/*.html')
     .pipe(wiredep(wiredepOptions)) // inject bower files
     .pipe($.useref())
+    // gulp-useref() no suffix support option, add min suffix manual
+    .pipe($.if('*.js', $.uglify()))
+    .pipe($.if('*.js', $.rename({suffix:'.min'})))
+    .pipe($.if('*.css', $.csso()))
+    .pipe($.if('*.css', $.rename({suffix:'.min'})))
+    .pipe($.replace('app.css', 'app.min.css'))
+    .pipe($.replace('bower.css', 'bower.min.css'))
+    .pipe($.replace('app.js', 'app.min.js'))
+    .pipe($.replace('bower.js', 'bower.min.js'))
     .pipe(gulp.dest(paths.dist));
 });
 
@@ -190,10 +208,18 @@ gulp.task('html-minify', function () {
     .pipe($.size({title: 'HTML minify', showFiles: true, pretty: true}));
 });
 
-gulp.task('dist', function () {
+gulp.task('build', function () {
+  var startTimeStamp = new Date();
+  runSequence('clean', 'images', 'html','html-minify', 'modernizr', function () {
+    console.log('Total cost time:', (new Date() - startTimeStamp), 'ms.');
+  });
+});
+
+gulp.task('serve:dist', function () {
   var startTimeStamp = new Date();
   process.env.NODE_ENV = 'production';
-  runSequence('clean', 'images', 'html', 'modernizr', 'html-minify', 'browser-sync', function () {
+
+  runSequence('clean', 'images', 'html','html-minify', 'modernizr',  'browser-sync', function () {
     console.log('Total cost time:', (new Date() - startTimeStamp), 'ms.');
   });
 });

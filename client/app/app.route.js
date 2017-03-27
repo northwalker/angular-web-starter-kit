@@ -20,6 +20,10 @@
             templateUrl: 'app/layouts/header/header.tmpl.html',
             controller: 'HeaderController'
           },
+          // 'toolbar@common': {
+          //   templateUrl: 'app/layouts/toolbar/toolbar.tmpl.html',
+          //   controller: 'ToolbarController'
+          // },
           'content@common': {
             templateUrl: 'app/common/main/main.tmpl.html',
             controller: 'MainController'
