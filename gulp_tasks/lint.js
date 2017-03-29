@@ -6,6 +6,7 @@
   var scripts = [
     'client/app/**/*.js',
     'server/**/*.js',
+    'gulpfile.js',
     'gulp_tasks/**/*.js',
 
     '!client/app/vendor/**',

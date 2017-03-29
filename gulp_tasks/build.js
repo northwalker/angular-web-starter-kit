@@ -59,6 +59,17 @@ gulp.task('misc', function () {
     .pipe(gulp.dest(paths.dist));
 });
 
+gulp.task('copy', function () {
+  gulp.src([
+    paths.src + '/*',
+    '!' + paths.src + '/*.html'
+  ], {
+    dot: true
+  })
+    .pipe(gulp.dest('dist'))
+    .pipe($.size({title: 'copy', showFiles: true, pretty: true}));
+});
+
 // Compile and automatically prefix stylesheets
 gulp.task('styles', function () {
   var AUTOPREFIXER_BROWSERS = [
@@ -153,7 +164,7 @@ gulp.task('inject', ['styles', 'scripts'], function () {
     .pipe($.concat('vendor.js'))
     .pipe($.rename({suffix: '.min'}))
     .pipe($.uglify({
-      wrap:true
+      wrap: true
     }))
     .pipe(gulp.dest(paths.tmp + '/serve/app/js/'));
 
@@ -186,9 +197,9 @@ gulp.task('html', ['inject'], function () {
     .pipe($.useref())
     // gulp-useref() no suffix support option, add min suffix manual
     .pipe($.if('*.js', $.uglify()))
-    .pipe($.if('*.js', $.rename({suffix:'.min'})))
+    .pipe($.if('*.js', $.rename({suffix: '.min'})))
     .pipe($.if('*.css', $.csso()))
-    .pipe($.if('*.css', $.rename({suffix:'.min'})))
+    .pipe($.if('*.css', $.rename({suffix: '.min'})))
     .pipe($.replace('app.css', 'app.min.css'))
     .pipe($.replace('bower.css', 'bower.min.css'))
     .pipe($.replace('app.js', 'app.min.js'))
@@ -210,7 +221,7 @@ gulp.task('html-minify', function () {
 
 gulp.task('build', function () {
   var startTimeStamp = new Date();
-  runSequence('clean', 'images', 'html','html-minify', 'modernizr', function () {
+  runSequence('clean', 'images', 'html', 'html-minify', 'copy', 'modernizr', function () {
     console.log('Total cost time:', (new Date() - startTimeStamp), 'ms.');
   });
 });
@@ -219,7 +230,7 @@ gulp.task('serve:dist', function () {
   var startTimeStamp = new Date();
   process.env.NODE_ENV = 'production';
 
-  runSequence('clean', 'images', 'html','html-minify', 'modernizr',  'browser-sync', function () {
+  runSequence('clean', 'images', 'html', 'html-minify', 'copy', 'modernizr', 'browser-sync', function () {
     console.log('Total cost time:', (new Date() - startTimeStamp), 'ms.');
   });
 });

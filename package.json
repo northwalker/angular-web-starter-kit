@@ -2,9 +2,10 @@
   "name": "angular-web-starter-kit",
   "version": "0.1.0",
   "description": "angular web starter kit",
-  "main": "index.js",
+  "main": "server/server.js",
   "scripts": {
-    "test": "gulp test"
+    "serve": "gulp serve",
+    "build": "gulp build"
   },
   "repository": {
     "type": "git",
