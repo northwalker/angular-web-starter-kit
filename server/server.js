@@ -11,6 +11,8 @@ var router = express.Router();
 
 // development
 if (process.env.NODE_ENV === 'development') {
+
+  app.use('/favicon.png', express.static('client/favicon.png'));
   app.use('/client', express.static('client'));
   app.use('/assets/images', express.static('client/assets/images'));
   app.use('/app', express.static('client/app'));
@@ -23,6 +25,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 if (process.env.NODE_ENV === 'production') {
 
+  app.use('/favicon.png', express.static('dist/favicon.png'));
   app.use('/styles', express.static('dist/styles'));
   app.use('/scripts', express.static('dist/scripts'));
   app.use('/assets/images', express.static('dist/assets/images'));

@@ -13,6 +13,7 @@ var runSequence = require('run-sequence');
 var nodemon = require('gulp-nodemon');
 var browserSync = require('browser-sync');
 var reload = browserSync.reload;
+var gitHash = '';
 
 var paths = {
   src: 'client',
@@ -25,6 +26,17 @@ gulp.task('clean', function (callback) {
   var folderPaths = [paths.tmp, paths.dist];
   del(folderPaths).then(function () {
     $.util.log('Files or folders that would be deleted:', folderPaths);
+    callback();
+  });
+});
+
+gulp.task('git:hash', function (callback) {
+  $.git.revParse({args: '--short HEAD'}, function (err, hash) {
+    // if (err) return;
+    if (hash) {
+      gitHash = hash;
+      $.util.log('current git hash: ' + hash);
+    }
     callback();
   });
 });
@@ -48,8 +60,9 @@ gulp.task('modernizr', function (cb) {
     .pipe(gulp.dest(paths.dist));
 
 });
-// Copy all static images
+
 gulp.task('images', function () {
+  // Copy all static images
   return gulp.src(paths.src + '/assets/images/**/*')
     .pipe(gulp.dest(paths.dist + '/assets/images/'));
 });
@@ -60,8 +73,10 @@ gulp.task('misc', function () {
 });
 
 gulp.task('copy', function () {
-  gulp.src([
+  return gulp.src([
     paths.src + '/*',
+    '!' + paths.src + '/app/',
+    '!' + paths.src + '/favicon*',
     '!' + paths.src + '/*.html'
   ], {
     dot: true
@@ -70,8 +85,8 @@ gulp.task('copy', function () {
     .pipe($.size({title: 'copy', showFiles: true, pretty: true}));
 });
 
-// Compile and automatically prefix stylesheets
 gulp.task('styles', function () {
+  // Compile and automatically prefix stylesheets
   var AUTOPREFIXER_BROWSERS = [
     'ie >= 10',
     'ie_mob >= 10',
@@ -127,7 +142,7 @@ gulp.task('partials', function () {
     .pipe($.size({title: 'partials', showFiles: true, pretty: true}));
 });
 
-gulp.task('scripts', ['partials'], function () {
+gulp.task('scripts', function () {
   return gulp.src([
     paths.src + '/app/**/*.js',
     paths.tmp + '/app/partials/templateCacheHtml.js',
@@ -147,7 +162,7 @@ gulp.task('scripts', ['partials'], function () {
     .pipe($.size({title: 'scripts', showFiles: true, pretty: true}));
 });
 
-gulp.task('inject', ['styles', 'scripts'], function () {
+gulp.task('inject', function () {
   var injectStyles = gulp.src([paths.tmp + '/serve/app/**/*.css'], {read: false});
   var injectVendorStyles = gulp.src(paths.src + '/app/vendor/**/*.css')
     .pipe($.concat('vendor.css'))
@@ -183,7 +198,7 @@ gulp.task('inject', ['styles', 'scripts'], function () {
     .pipe(gulp.dest(paths.tmp + '/serve'));
 });
 
-gulp.task('html', ['inject'], function () {
+gulp.task('html', function () {
 
   // var jsFilter = $.filter("**/*.js", { restore: true });
   // var cssFilter = $.filter("**/*.css", { restore: true });
@@ -196,6 +211,7 @@ gulp.task('html', ['inject'], function () {
     .pipe(wiredep(wiredepOptions)) // inject bower files
     .pipe($.useref())
     // gulp-useref() no suffix support option, add min suffix manual
+    // Changing the file name will affect useref()
     .pipe($.if('*.js', $.uglify()))
     .pipe($.if('*.js', $.rename({suffix: '.min'})))
     .pipe($.if('*.css', $.csso()))
@@ -207,30 +223,50 @@ gulp.task('html', ['inject'], function () {
     .pipe(gulp.dest(paths.dist));
 });
 
-gulp.task('html-minify', function () {
+gulp.task('html:replace', function () {
+  var versionMetaTag = '<meta name="version" content="' + (gitHash ? gitHash : 'development') + '">';
   return gulp.src(paths.dist + '/*.html')
+    .pipe($.replace('<meta name="version" content="">', versionMetaTag)) // versionize
+    .pipe($.replace('app.min.css', 'app.min.css?v=' + gitHash))
+    .pipe($.replace('app.min.js', 'app.min.js?v=' + gitHash))
+    .pipe(gulp.dest(paths.dist))
+    .pipe($.size({title: 'HTML Replace', showFiles: true, pretty: true}));
+});
+
+gulp.task('html:minify', function () {
+  return gulp.src(paths.dist + '/*.html')
+  // Minify HTML
     .pipe($.htmlmin({
-      collapseWhitespace: true,
+      // collapseWhitespace: true,
       removeComments: true,
       minifyJS: true,             // Gogle Analytics code
       minifyCSS: true
     }))
     .pipe(gulp.dest(paths.dist))
-    .pipe($.size({title: 'HTML minify', showFiles: true, pretty: true}));
+    .pipe($.size({title: 'HTML Minify', showFiles: true, pretty: true}));
 });
 
-gulp.task('build', function () {
-  var startTimeStamp = new Date();
-  runSequence('clean', 'images', 'html', 'html-minify', 'copy', 'modernizr', function () {
-    console.log('Total cost time:', (new Date() - startTimeStamp), 'ms.');
-  });
+gulp.task('build', function (calllback) {
+  var startBuildingTimeStamp = new Date();
+  runSequence(
+    'clean',
+    'git:hash',
+    'partials',
+    ['styles', 'scripts'],
+    'inject',
+    'html',
+    'modernizr', 'html:replace', 'html:minify',
+    ['misc', 'images', 'copy'],
+    function () {
+      $.util.log('Building time:', (new Date() - startBuildingTimeStamp), 'ms.');
+      calllback();
+    });
 });
 
 gulp.task('serve:dist', function () {
   var startTimeStamp = new Date();
   process.env.NODE_ENV = 'production';
-
-  runSequence('clean', 'images', 'html', 'html-minify', 'copy', 'modernizr', 'browser-sync', function () {
+  runSequence('build', 'browser-sync', function () {
     console.log('Total cost time:', (new Date() - startTimeStamp), 'ms.');
   });
 });
